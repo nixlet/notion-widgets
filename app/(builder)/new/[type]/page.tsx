@@ -1,0 +1,55 @@
+import { notFound } from "next/navigation";
+import WidgetEditor from "@/components/builder/WidgetEditor";
+import { newFieldId } from "@/lib/id";
+import { WidgetTypeSchema, type WidgetConfig } from "@/lib/types";
+
+function defaultConfigFor(type: string): WidgetConfig {
+  switch (type) {
+    case "button":
+      return {
+        label: "Click me",
+        url: "https://",
+        style: "solid",
+        color: "#2563eb",
+        openInNewTab: true,
+        fullWidth: false,
+      };
+    case "form":
+      return {
+        title: "Quick form",
+        fields: [{ id: newFieldId(), label: "Name", type: "text", required: true }],
+        submitLabel: "Submit",
+        successMessage: "Thanks! Your response was recorded.",
+        accentColor: "#2563eb",
+      };
+    case "gallery":
+      return {
+        layout: "grid",
+        columns: 3,
+        items: [{ id: newFieldId(), imageUrl: "", caption: "" }],
+      };
+    case "progress":
+      return { mode: "bar", label: "Goal", color: "#2563eb", current: 0, target: 100 };
+    default:
+      throw new Error("unreachable");
+  }
+}
+
+export default async function NewWidgetTypePage({
+  params,
+}: {
+  params: Promise<{ type: string }>;
+}) {
+  const { type } = await params;
+  const parsed = WidgetTypeSchema.safeParse(type);
+  if (!parsed.success) notFound();
+
+  return (
+    <div className="flex flex-col gap-6">
+      <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
+        New {parsed.data} widget
+      </h1>
+      <WidgetEditor type={parsed.data} defaultConfig={defaultConfigFor(parsed.data)} />
+    </div>
+  );
+}

@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light dark;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Used on /w/[id] pages so Notion's iframe shows no scrollbars/margins. */
+.embed-root {
+  margin: 0;
+  padding: 0;
+}
