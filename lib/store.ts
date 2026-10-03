@@ -1,4 +1,4 @@
-import type { Submission, Widget, WidgetSummary } from "./types";
+import type { Submission, User, UserSummary, Widget, WidgetSummary } from "./types";
 
 /**
  * Storage interface. Two implementations:
@@ -18,6 +18,10 @@ interface Store {
   addSubmission(widgetId: string, submission: Submission): Promise<void>;
   listSubmissions(widgetId: string): Promise<Submission[]>;
   deleteSubmissions(widgetId: string): Promise<void>;
+  listUsers(): Promise<UserSummary[]>;
+  getUserByEmail(email: string): Promise<User | null>;
+  createUser(user: User): Promise<void>;
+  deleteUser(id: string): Promise<void>;
 }
 
 // The Vercel Marketplace Upstash integration, and the older standalone
@@ -103,6 +107,40 @@ class RedisStore implements Store {
     const kv = await this.kv();
     await kv.del(`submissions:${widgetId}`);
   }
+
+  async listUsers(): Promise<UserSummary[]> {
+    const kv = await this.kv();
+    const ids = await kv.smembers<string[]>("users:index");
+    if (!ids || ids.length === 0) return [];
+    const users = await Promise.all(ids.map((id) => kv.get<User>(`user:${id}`)));
+    return users
+      .filter((u): u is User => Boolean(u))
+      .map((u) => ({ id: u.id, email: u.email, createdAt: u.createdAt }))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    const kv = await this.kv();
+    const id = await kv.get<string>(`user:by-email:${email}`);
+    if (!id) return null;
+    const user = await kv.get<User>(`user:${id}`);
+    return user ?? null;
+  }
+
+  async createUser(user: User): Promise<void> {
+    const kv = await this.kv();
+    await kv.set(`user:${user.id}`, user);
+    await kv.set(`user:by-email:${user.email}`, user.id);
+    await kv.sadd("users:index", user.id);
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    const kv = await this.kv();
+    const user = await kv.get<User>(`user:${id}`);
+    await kv.del(`user:${id}`);
+    await kv.srem("users:index", id);
+    if (user) await kv.del(`user:by-email:${user.email}`);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -112,6 +150,7 @@ class RedisStore implements Store {
 interface FileDb {
   widgets: Record<string, Widget>;
   submissions: Record<string, Submission[]>;
+  users: Record<string, User>;
 }
 
 class FileStore implements Store {
@@ -121,9 +160,11 @@ class FileStore implements Store {
     const fs = await import("fs/promises");
     try {
       const raw = await fs.readFile(this.dbPath, "utf-8");
-      return JSON.parse(raw) as FileDb;
+      // Spread onto defaults so a db.json written before `users` existed
+      // (or before this field was added) still loads cleanly.
+      return { widgets: {}, submissions: {}, users: {}, ...JSON.parse(raw) } as FileDb;
     } catch {
-      return { widgets: {}, submissions: {} };
+      return { widgets: {}, submissions: {}, users: {} };
     }
   }
 
@@ -180,6 +221,30 @@ class FileStore implements Store {
   async deleteSubmissions(widgetId: string): Promise<void> {
     const db = await this.read();
     db.submissions[widgetId] = [];
+    await this.write(db);
+  }
+
+  async listUsers(): Promise<UserSummary[]> {
+    const db = await this.read();
+    return Object.values(db.users)
+      .map((u) => ({ id: u.id, email: u.email, createdAt: u.createdAt }))
+      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
+  async getUserByEmail(email: string): Promise<User | null> {
+    const db = await this.read();
+    return Object.values(db.users).find((u) => u.email === email) ?? null;
+  }
+
+  async createUser(user: User): Promise<void> {
+    const db = await this.read();
+    db.users[user.id] = user;
+    await this.write(db);
+  }
+
+  async deleteUser(id: string): Promise<void> {
+    const db = await this.read();
+    delete db.users[id];
     await this.write(db);
   }
 }

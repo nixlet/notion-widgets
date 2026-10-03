@@ -84,6 +84,21 @@ export const ProgressConfigSchema = z.object({
 });
 export type ProgressConfig = z.infer<typeof ProgressConfigSchema>;
 
+// ---------- Users (admin dashboard accounts) ----------
+export const UserSchema = z.object({
+  id: z.string(),
+  email: z.string().email(),
+  passwordHash: z.string(),
+  createdAt: z.string(),
+});
+export type User = z.infer<typeof UserSchema>;
+
+export interface UserSummary {
+  id: string;
+  email: string;
+  createdAt: string;
+}
+
 // ---------- Widget envelope ----------
 export const WidgetTypeSchema = z.enum(["button", "form", "gallery", "progress"]);
 export type WidgetType = z.infer<typeof WidgetTypeSchema>;

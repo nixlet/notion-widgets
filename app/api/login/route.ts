@@ -1,14 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
-
-const COOKIE_NAME = "nw_auth";
-
-async function sha256(input: string): Promise<string> {
-  const data = new TextEncoder().encode(input);
-  const hash = await crypto.subtle.digest("SHA-256", data);
-  return Array.from(new Uint8Array(hash))
-    .map((b) => b.toString(16).padStart(2, "0"))
-    .join("");
-}
+import { store } from "@/lib/store";
+import { verifyPassword } from "@/lib/auth";
+import { COOKIE_NAME, MASTER_ID, createSessionToken, masterFingerprint } from "@/lib/session";
 
 export async function POST(req: NextRequest) {
   const adminPassword = process.env.ADMIN_PASSWORD;
@@ -16,12 +9,33 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ ok: true }); // gate disabled
   }
 
+  const authSecret = process.env.AUTH_SECRET ?? "";
   const body = await req.json().catch(() => null);
-  if (body?.password !== adminPassword) {
-    return NextResponse.json({ error: "Incorrect password" }, { status: 401 });
+  const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+  const password = typeof body?.password === "string" ? body.password : "";
+
+  let userId: string | null = null;
+  let fingerprint: string | null = null;
+
+  if (!email) {
+    // Master login - the one password set in Railway.
+    if (password && password === adminPassword) {
+      userId = MASTER_ID;
+      fingerprint = await masterFingerprint(adminPassword);
+    }
+  } else {
+    const user = await store.getUserByEmail(email);
+    if (user && (await verifyPassword(password, user.passwordHash))) {
+      userId = user.id;
+      fingerprint = user.passwordHash;
+    }
   }
 
-  const token = await sha256(adminPassword + (process.env.AUTH_SECRET ?? ""));
+  if (!userId || !fingerprint) {
+    return NextResponse.json({ error: "Incorrect email or password" }, { status: 401 });
+  }
+
+  const token = await createSessionToken(userId, fingerprint, authSecret);
   const res = NextResponse.json({ ok: true });
   res.cookies.set(COOKIE_NAME, token, {
     httpOnly: true,
