@@ -13,6 +13,7 @@ export async function GET() {
 }
 
 const CreateUserSchema = z.object({
+  name: z.string().min(1, "Enter a name").max(80),
   email: z.string().email("Enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
 });
@@ -35,6 +36,7 @@ export async function POST(req: NextRequest) {
 
   const user = {
     id: newUserId(),
+    name: parsed.data.name.trim(),
     email,
     passwordHash: await hashPassword(parsed.data.password),
     createdAt: new Date().toISOString(),
@@ -42,7 +44,7 @@ export async function POST(req: NextRequest) {
 
   await store.createUser(user);
   return NextResponse.json(
-    { user: { id: user.id, email: user.email, createdAt: user.createdAt } },
+    { user: { id: user.id, name: user.name, email: user.email, createdAt: user.createdAt } },
     { status: 201 }
   );
 }

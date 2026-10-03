@@ -1,10 +1,20 @@
 import { NextRequest, NextResponse } from "next/server";
 import { store } from "@/lib/store";
 import { parseConfigForType, type FormConfig } from "@/lib/types";
+import { MASTER_ID } from "@/lib/session";
+
+function canAccess(widget: { ownerId?: string }, userId: string): boolean {
+  return userId === MASTER_ID || (widget.ownerId ?? MASTER_ID) === userId;
+}
 
 function toCsv(rows: Record<string, unknown>[], columns: string[]): string {
   const escape = (v: unknown) => {
-    const s = v === undefined || v === null ? "" : String(v);
+    let s = v === undefined || v === null ? "" : String(v);
+    // Neutralize spreadsheet formula injection: a cell starting with one of
+    // these characters gets interpreted as a formula by Excel/Sheets when
+    // the CSV is opened, which would let a form submitter run a "formula"
+    // just by typing it into a text field.
+    if (/^[=+\-@\t\r]/.test(s)) s = `'${s}`;
     return `"${s.replace(/"/g, '""')}"`;
   };
   const header = columns.map(escape).join(",");
@@ -18,7 +28,8 @@ export async function GET(
 ) {
   const { id } = await params;
   const widget = await store.getWidget(id);
-  if (!widget || widget.type !== "form") {
+  const userId = req.headers.get("x-nw-user") ?? MASTER_ID;
+  if (!widget || widget.type !== "form" || !canAccess(widget, userId)) {
     return NextResponse.json({ error: "Not found" }, { status: 404 });
   }
 
@@ -45,12 +56,15 @@ export async function GET(
 }
 
 export async function DELETE(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
   const widget = await store.getWidget(id);
-  if (!widget) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const userId = req.headers.get("x-nw-user") ?? MASTER_ID;
+  if (!widget || !canAccess(widget, userId)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   await store.deleteSubmissions(id);
   return NextResponse.json({ ok: true });
 }

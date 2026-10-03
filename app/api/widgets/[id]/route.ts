@@ -1,14 +1,26 @@
 import { NextRequest, NextResponse } from "next/server";
 import { store } from "@/lib/store";
 import { parseConfigForType, WidgetTypeSchema } from "@/lib/types";
+import { findUnsafeUrls } from "@/lib/url";
+import { MASTER_ID } from "@/lib/session";
 import { z } from "zod";
 
 type Ctx = { params: Promise<{ id: string }> };
 
-export async function GET(_req: NextRequest, { params }: Ctx) {
+// Master can touch anything; everyone else only their own widgets. Not
+// found (rather than forbidden) on a mismatch, so a regular user can't
+// even confirm that some other id exists.
+function canAccess(widget: { ownerId?: string }, userId: string): boolean {
+  return userId === MASTER_ID || (widget.ownerId ?? MASTER_ID) === userId;
+}
+
+export async function GET(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   const widget = await store.getWidget(id);
-  if (!widget) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const userId = req.headers.get("x-nw-user") ?? MASTER_ID;
+  if (!widget || !canAccess(widget, userId)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   return NextResponse.json({ widget });
 }
 
@@ -22,7 +34,10 @@ const UpdateWidgetSchema = z.object({
 export async function PUT(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   const existing = await store.getWidget(id);
-  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const userId = req.headers.get("x-nw-user") ?? MASTER_ID;
+  if (!existing || !canAccess(existing, userId)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
 
   const body = await req.json().catch(() => null);
   const parsed = UpdateWidgetSchema.safeParse(body);
@@ -43,6 +58,11 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
     );
   }
 
+  const urlErrors = findUnsafeUrls(parsed.data.type, config as unknown as Record<string, unknown>);
+  if (urlErrors.length > 0) {
+    return NextResponse.json({ error: urlErrors[0] }, { status: 400 });
+  }
+
   const widget = {
     ...existing,
     type: parsed.data.type,
@@ -56,10 +76,13 @@ export async function PUT(req: NextRequest, { params }: Ctx) {
   return NextResponse.json({ widget });
 }
 
-export async function DELETE(_req: NextRequest, { params }: Ctx) {
+export async function DELETE(req: NextRequest, { params }: Ctx) {
   const { id } = await params;
   const existing = await store.getWidget(id);
-  if (!existing) return NextResponse.json({ error: "Not found" }, { status: 404 });
+  const userId = req.headers.get("x-nw-user") ?? MASTER_ID;
+  if (!existing || !canAccess(existing, userId)) {
+    return NextResponse.json({ error: "Not found" }, { status: 404 });
+  }
   await store.deleteWidget(id);
   return NextResponse.json({ ok: true });
 }

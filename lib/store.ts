@@ -14,13 +14,17 @@ interface Store {
   getWidget(id: string): Promise<Widget | null>;
   saveWidget(widget: Widget): Promise<void>;
   deleteWidget(id: string): Promise<void>;
-  listWidgets(): Promise<WidgetSummary[]>;
+  // Pass an ownerId to get only that owner's widgets; omit to get everyone's
+  // (used for the master login, which can see everything).
+  listWidgets(ownerId?: string): Promise<WidgetSummary[]>;
   addSubmission(widgetId: string, submission: Submission): Promise<void>;
   listSubmissions(widgetId: string): Promise<Submission[]>;
   deleteSubmissions(widgetId: string): Promise<void>;
   listUsers(): Promise<UserSummary[]>;
+  getUserById(id: string): Promise<User | null>;
   getUserByEmail(email: string): Promise<User | null>;
   createUser(user: User): Promise<void>;
+  updateUser(id: string, patch: Partial<Pick<User, "name" | "passwordHash">>): Promise<User | null>;
   deleteUser(id: string): Promise<void>;
 }
 
@@ -71,7 +75,7 @@ class RedisStore implements Store {
     await this.deleteSubmissions(id);
   }
 
-  async listWidgets(): Promise<WidgetSummary[]> {
+  async listWidgets(ownerId?: string): Promise<WidgetSummary[]> {
     const kv = await this.kv();
     const ids = await kv.zrange<string[]>("widgets:index", 0, -1, { rev: true });
     if (!ids || ids.length === 0) return [];
@@ -79,6 +83,7 @@ class RedisStore implements Store {
     const summaries: WidgetSummary[] = [];
     for (const w of widgets) {
       if (!w) continue;
+      if (ownerId && (w.ownerId ?? "master") !== ownerId) continue;
       const submissionCount =
         w.type === "form" ? (await this.listSubmissions(w.id)).length : undefined;
       summaries.push({
@@ -115,8 +120,14 @@ class RedisStore implements Store {
     const users = await Promise.all(ids.map((id) => kv.get<User>(`user:${id}`)));
     return users
       .filter((u): u is User => Boolean(u))
-      .map((u) => ({ id: u.id, email: u.email, createdAt: u.createdAt }))
+      .map((u) => ({ id: u.id, name: u.name, email: u.email, createdAt: u.createdAt }))
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
+  async getUserById(id: string): Promise<User | null> {
+    const kv = await this.kv();
+    const user = await kv.get<User>(`user:${id}`);
+    return user ?? null;
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
@@ -132,6 +143,18 @@ class RedisStore implements Store {
     await kv.set(`user:${user.id}`, user);
     await kv.set(`user:by-email:${user.email}`, user.id);
     await kv.sadd("users:index", user.id);
+  }
+
+  async updateUser(
+    id: string,
+    patch: Partial<Pick<User, "name" | "passwordHash">>
+  ): Promise<User | null> {
+    const kv = await this.kv();
+    const user = await kv.get<User>(`user:${id}`);
+    if (!user) return null;
+    const updated: User = { ...user, ...patch };
+    await kv.set(`user:${id}`, updated);
+    return updated;
   }
 
   async deleteUser(id: string): Promise<void> {
@@ -193,9 +216,10 @@ class FileStore implements Store {
     await this.write(db);
   }
 
-  async listWidgets(): Promise<WidgetSummary[]> {
+  async listWidgets(ownerId?: string): Promise<WidgetSummary[]> {
     const db = await this.read();
     return Object.values(db.widgets)
+      .filter((w) => !ownerId || (w.ownerId ?? "master") === ownerId)
       .sort((a, b) => (a.updatedAt < b.updatedAt ? 1 : -1))
       .map((w) => ({
         id: w.id,
@@ -227,8 +251,13 @@ class FileStore implements Store {
   async listUsers(): Promise<UserSummary[]> {
     const db = await this.read();
     return Object.values(db.users)
-      .map((u) => ({ id: u.id, email: u.email, createdAt: u.createdAt }))
+      .map((u) => ({ id: u.id, name: u.name, email: u.email, createdAt: u.createdAt }))
       .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
+  }
+
+  async getUserById(id: string): Promise<User | null> {
+    const db = await this.read();
+    return db.users[id] ?? null;
   }
 
   async getUserByEmail(email: string): Promise<User | null> {
@@ -240,6 +269,19 @@ class FileStore implements Store {
     const db = await this.read();
     db.users[user.id] = user;
     await this.write(db);
+  }
+
+  async updateUser(
+    id: string,
+    patch: Partial<Pick<User, "name" | "passwordHash">>
+  ): Promise<User | null> {
+    const db = await this.read();
+    const user = db.users[id];
+    if (!user) return null;
+    const updated = { ...user, ...patch };
+    db.users[id] = updated;
+    await this.write(db);
+    return updated;
   }
 
   async deleteUser(id: string): Promise<void> {

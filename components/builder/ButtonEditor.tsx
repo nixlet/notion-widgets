@@ -49,6 +49,41 @@ export default function ButtonEditor({
         />
       </div>
 
+      <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
+        <label className={labelCls}>Subtext (shown inside the button, under the label)</label>
+        <input
+          className={input}
+          value={config.subLabel ?? ""}
+          onChange={(e) => set("subLabel", e.target.value)}
+          placeholder="e.g. Takes 2 minutes"
+          maxLength={100}
+        />
+        {config.subLabel && (
+          <div className={row}>
+            <div>
+              <label className={labelCls}>Color</label>
+              <input
+                type="color"
+                className="h-9 w-14 cursor-pointer rounded-lg border border-neutral-200 dark:border-neutral-700"
+                value={config.subLabelColor}
+                onChange={(e) => set("subLabelColor", e.target.value)}
+              />
+            </div>
+            <div className="flex-1">
+              <label className={labelCls}>Size ({config.subLabelSize}px)</label>
+              <input
+                type="range"
+                min={8}
+                max={48}
+                className="w-full accent-blue-600"
+                value={config.subLabelSize}
+                onChange={(e) => set("subLabelSize", Number(e.target.value))}
+              />
+            </div>
+          </div>
+        )}
+      </div>
+
       <div>
         <label className={labelCls}>Link URL</label>
         <input

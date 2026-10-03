@@ -16,6 +16,9 @@ export default function ButtonWidget({
 }) {
   const {
     label,
+    subLabel,
+    subLabelColor,
+    subLabelSize,
     url,
     style,
     color,
@@ -118,6 +121,18 @@ export default function ButtonWidget({
         {cornerGlow && <span aria-hidden className="pointer-events-none" style={glowStyle} />}
         <span className="relative z-10 flex flex-col items-center gap-1.5">
           <span style={typographyStyle}>{label}</span>
+          {subLabel && (
+            <span
+              style={{
+                fontFamily: font.cssFamily,
+                fontSize: `${subLabelSize}px`,
+                color: subLabelColor,
+                fontWeight: 400,
+              }}
+            >
+              {subLabel}
+            </span>
+          )}
           {accentLine && (
             <span
               aria-hidden

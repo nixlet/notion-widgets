@@ -11,9 +11,16 @@ import { COOKIE_NAME, MASTER_ID, masterFingerprint, parseSessionToken } from "@/
 //
 // Two kinds of sessions:
 // - The master login (just the ADMIN_PASSWORD, no email) - can do
-//   everything, including managing the user list at /users.
-// - Regular users (created from /users) - can manage widgets, but can't
-//   see or change the user list.
+//   everything, including managing the user list at /users and seeing
+//   every widget regardless of who made it.
+// - Regular users (created from /users) - can manage their own widgets,
+//   but can't see the user list or anyone else's widgets.
+//
+// Everything past this point also forwards an `x-nw-user` header to route
+// handlers, identifying who's making the request. It is always set here
+// from the verified session - never from the incoming request - so a
+// client can never spoof another user's identity by sending its own copy
+// of that header.
 
 export async function proxy(req: NextRequest) {
   const adminPassword = process.env.ADMIN_PASSWORD;
@@ -49,15 +56,18 @@ export async function proxy(req: NextRequest) {
     }
   }
 
-  if (authed) return NextResponse.next();
-
-  if (pathname.startsWith("/api/")) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  if (!authed) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+    const loginUrl = new URL("/login", req.url);
+    loginUrl.searchParams.set("next", pathname);
+    return NextResponse.redirect(loginUrl);
   }
 
-  const loginUrl = new URL("/login", req.url);
-  loginUrl.searchParams.set("next", pathname);
-  return NextResponse.redirect(loginUrl);
+  const headers = new Headers(req.headers);
+  headers.set("x-nw-user", session!.userId);
+  return NextResponse.next({ request: { headers } });
 }
 
 export const config = {

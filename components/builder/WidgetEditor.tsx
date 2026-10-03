@@ -112,32 +112,42 @@ export default function WidgetEditor({
         </button>
       </div>
 
-      <div className="flex flex-col gap-6">
-        <WidgetPreviewFrame transparent={transparent}>
-          {type === "button" && <ButtonWidget config={config as any} preview />}
-          {type === "form" && (
-            <FormWidget widgetId="preview" config={config as any} preview />
-          )}
-          {type === "gallery" && <GalleryWidget config={config as any} />}
-          {type === "progress" && <ProgressWidget config={config as any} />}
-        </WidgetPreviewFrame>
+      {/*
+        This outer div is the grid cell and keeps CSS Grid's default
+        stretch behavior, so it's as tall as the (longer) options column.
+        The inner div below is the actual sticky element - it's short
+        (just its own content height), so it has room inside this tall
+        cell to float near the top of the viewport and stay in view while
+        the options list scrolls past, instead of scrolling away with it.
+      */}
+      <div className="flex flex-col">
+        <div className="flex flex-col gap-6 lg:sticky lg:top-6">
+          <WidgetPreviewFrame transparent={transparent}>
+            {type === "button" && <ButtonWidget config={config as any} preview />}
+            {type === "form" && (
+              <FormWidget widgetId="preview" config={config as any} preview />
+            )}
+            {type === "gallery" && <GalleryWidget config={config as any} />}
+            {type === "progress" && <ProgressWidget config={config as any} />}
+          </WidgetPreviewFrame>
 
-        {savedWidget ? (
-          <div className="flex flex-col gap-2">
-            <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
-              Embed URL - paste this into Notion
-            </p>
-            <CopyEmbedUrl widgetId={savedWidget.id} />
+          {savedWidget ? (
+            <div className="flex flex-col gap-2">
+              <p className="text-xs font-medium uppercase tracking-wide text-neutral-400">
+                Embed URL - paste this into Notion
+              </p>
+              <CopyEmbedUrl widgetId={savedWidget.id} />
+              <p className="text-xs text-neutral-500 dark:text-neutral-400">
+                In Notion, type <code>/embed</code>, paste the URL, and press enter. If
+                Notion offers to create a bookmark instead, choose &quot;Embed link&quot;.
+              </p>
+            </div>
+          ) : (
             <p className="text-xs text-neutral-500 dark:text-neutral-400">
-              In Notion, type <code>/embed</code>, paste the URL, and press enter. If
-              Notion offers to create a bookmark instead, choose &quot;Embed link&quot;.
+              Save the widget to get its embed URL.
             </p>
-          </div>
-        ) : (
-          <p className="text-xs text-neutral-500 dark:text-neutral-400">
-            Save the widget to get its embed URL.
-          </p>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );

@@ -2,11 +2,20 @@ import { NextRequest, NextResponse } from "next/server";
 import { store } from "@/lib/store";
 import { verifyPassword } from "@/lib/auth";
 import { COOKIE_NAME, MASTER_ID, createSessionToken, masterFingerprint } from "@/lib/session";
+import { clearLoginFailures, clientKey, recordLoginFailure, tooManyLoginAttempts } from "@/lib/rateLimit";
 
 export async function POST(req: NextRequest) {
   const adminPassword = process.env.ADMIN_PASSWORD;
   if (!adminPassword) {
     return NextResponse.json({ ok: true }); // gate disabled
+  }
+
+  const key = clientKey(req);
+  if (await tooManyLoginAttempts(key)) {
+    return NextResponse.json(
+      { error: "Too many attempts. Please wait a few minutes and try again." },
+      { status: 429 }
+    );
   }
 
   const authSecret = process.env.AUTH_SECRET ?? "";
@@ -32,8 +41,11 @@ export async function POST(req: NextRequest) {
   }
 
   if (!userId || !fingerprint) {
+    await recordLoginFailure(key);
     return NextResponse.json({ error: "Incorrect email or password" }, { status: 401 });
   }
+
+  await clearLoginFailures(key);
 
   const token = await createSessionToken(userId, fingerprint, authSecret);
   const res = NextResponse.json({ ok: true });

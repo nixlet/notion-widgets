@@ -4,6 +4,10 @@ import { z } from "zod";
 export const ButtonConfigSchema = z.object({
   label: z.string().min(1).max(60),
   url: z.string().min(1),
+  // Small slogan/caption line rendered inside the button, under the label.
+  subLabel: z.string().max(100).optional(),
+  subLabelColor: z.string().default("#e2e8f0"),
+  subLabelSize: z.number().int().min(8).max(48).default(12),
   style: z.enum(["solid", "outline", "ghost"]).default("solid"),
   color: z.string().default("#2563eb"),
   openInNewTab: z.boolean().default(true),
@@ -103,6 +107,7 @@ export type ProgressConfig = z.infer<typeof ProgressConfigSchema>;
 // ---------- Users (admin dashboard accounts) ----------
 export const UserSchema = z.object({
   id: z.string(),
+  name: z.string().min(1).max(80),
   email: z.string().email(),
   passwordHash: z.string(),
   createdAt: z.string(),
@@ -111,6 +116,7 @@ export type User = z.infer<typeof UserSchema>;
 
 export interface UserSummary {
   id: string;
+  name: string;
   email: string;
   createdAt: string;
 }
@@ -132,6 +138,11 @@ export const WidgetSchema = z.object({
   name: z.string().min(1).max(80),
   transparent: z.boolean().default(true),
   config: z.unknown(),
+  // Who created this widget ("master" for the master login, or a user id).
+  // Optional for backward compatibility with widgets saved before ownership
+  // existed - code that reads this should fall back to treating a missing
+  // value as master-owned.
+  ownerId: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
 });

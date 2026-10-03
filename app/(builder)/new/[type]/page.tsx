@@ -8,6 +8,8 @@ function defaultConfigFor(type: string): WidgetConfig {
     case "button":
       return {
         label: "Click me",
+        subLabelColor: "#e2e8f0",
+        subLabelSize: 12,
         url: "https://",
         style: "solid",
         color: "#2563eb",

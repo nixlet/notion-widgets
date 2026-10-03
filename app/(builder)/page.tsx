@@ -45,6 +45,11 @@ export default function Dashboard() {
     load();
   }
 
+  async function handleDuplicate(id: string) {
+    await fetch(`/api/widgets/${id}/duplicate`, { method: "POST" });
+    load();
+  }
+
   async function copy(id: string) {
     await navigator.clipboard.writeText(`${origin}/w/${id}`).catch(() => {});
   }
@@ -113,6 +118,12 @@ export default function Dashboard() {
             >
               Edit
             </Link>
+            <button
+              onClick={() => handleDuplicate(w.id)}
+              className="rounded-md border border-neutral-200 px-2.5 py-1.5 text-xs font-medium text-neutral-600 hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            >
+              Duplicate
+            </button>
             <button
               onClick={() => handleDelete(w.id, w.name)}
               className="rounded-md border border-red-200 px-2.5 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 dark:border-red-900 dark:text-red-400 dark:hover:bg-red-950"
