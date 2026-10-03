@@ -13,6 +13,11 @@ function defaultConfigFor(type: string): WidgetConfig {
         color: "#2563eb",
         openInNewTab: true,
         fullWidth: false,
+        backgroundType: "solid",
+        gradientColor: "#7c3aed",
+        gradientAngle: 135,
+        textColor: "#ffffff",
+        borderRadius: 12,
       };
     case "form":
       return {

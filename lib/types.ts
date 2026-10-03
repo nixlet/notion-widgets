@@ -9,6 +9,17 @@ export const ButtonConfigSchema = z.object({
   openInNewTab: z.boolean().default(true),
   fullWidth: z.boolean().default(false),
   description: z.string().max(140).optional(),
+  // Background: a flat color (uses `style`/`color` above) or a gradient.
+  backgroundType: z.enum(["solid", "gradient"]).default("solid"),
+  gradientColor: z.string().default("#7c3aed"),
+  gradientAngle: z.number().min(0).max(360).default(135),
+  // Text color override - useful once the background is custom (esp. gradients).
+  textColor: z.string().default("#ffffff"),
+  // Explicit size, for a fixed tile/square button. Leave unset for a
+  // button that just hugs its label (or stretches via fullWidth).
+  width: z.number().int().min(40).max(800).optional(),
+  height: z.number().int().min(32).max(800).optional(),
+  borderRadius: z.number().int().min(0).max(999).default(12),
 });
 export type ButtonConfig = z.infer<typeof ButtonConfigSchema>;
 
