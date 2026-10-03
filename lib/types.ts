@@ -13,8 +13,24 @@ export const ButtonConfigSchema = z.object({
   backgroundType: z.enum(["solid", "gradient"]).default("solid"),
   gradientColor: z.string().default("#7c3aed"),
   gradientAngle: z.number().min(0).max(360).default(135),
+  // 0-100. Lets the background show through to whatever it's embedded on
+  // (Notion page, dark/light mode, etc) without fading the text.
+  backgroundOpacity: z.number().min(0).max(100).default(100),
   // Text color override - useful once the background is custom (esp. gradients).
   textColor: z.string().default("#ffffff"),
+  // Soft decorative color glow bleeding from one corner, purely visual.
+  cornerGlow: z.boolean().default(false),
+  cornerGlowColor: z.string().default("#22d3ee"),
+  cornerGlowPosition: z
+    .enum(["top-left", "top-right", "bottom-left", "bottom-right"])
+    .default("top-left"),
+  cornerGlowSize: z.number().int().min(20).max(400).default(160),
+  cornerGlowOpacity: z.number().min(0).max(100).default(60),
+  // Small accent line under the label.
+  accentLine: z.boolean().default(false),
+  accentLineColor: z.string().default("#22d3ee"),
+  accentLineWidth: z.number().int().min(1).max(12).default(3),
+  accentLineLength: z.number().int().min(10).max(200).default(40),
   // Explicit size, for a fixed tile/square button. Leave unset for a
   // button that just hugs its label (or stretches via fullWidth).
   width: z.number().int().min(40).max(800).optional(),

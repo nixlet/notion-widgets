@@ -25,7 +25,17 @@ export default function ButtonWidget({
     backgroundType,
     gradientColor,
     gradientAngle,
+    backgroundOpacity,
     textColor,
+    cornerGlow,
+    cornerGlowColor,
+    cornerGlowPosition,
+    cornerGlowSize,
+    cornerGlowOpacity,
+    accentLine,
+    accentLineColor,
+    accentLineWidth,
+    accentLineLength,
     width,
     height,
     borderRadius,
@@ -41,17 +51,28 @@ export default function ButtonWidget({
   const font = getFont(fontFamily);
   const fontUrl = googleFontsUrl(font);
 
-  const background: React.CSSProperties =
-    backgroundType === "gradient"
-      ? {
-          backgroundImage: `linear-gradient(${gradientAngle}deg, ${color}, ${gradientColor})`,
-          color: textColor,
-        }
-      : style === "outline"
-        ? { backgroundColor: "transparent", color, border: `1.5px solid ${color}` }
-        : style === "ghost"
-          ? { backgroundColor: withAlpha(color, "1a"), color }
-          : { backgroundColor: color, color: textColor };
+  // The fill (solid color or gradient) lives on its own layer so
+  // `backgroundOpacity` can fade it without touching the text or border.
+  let bgLayerStyle: React.CSSProperties;
+  let borderStyle: React.CSSProperties = {};
+  let resolvedTextColor: string;
+
+  if (backgroundType === "gradient") {
+    bgLayerStyle = {
+      backgroundImage: `linear-gradient(${gradientAngle}deg, ${color}, ${gradientColor})`,
+    };
+    resolvedTextColor = textColor;
+  } else if (style === "outline") {
+    bgLayerStyle = { backgroundColor: "transparent" };
+    borderStyle = { border: `1.5px solid ${color}` };
+    resolvedTextColor = color;
+  } else if (style === "ghost") {
+    bgLayerStyle = { backgroundColor: withAlpha(color, "1a") };
+    resolvedTextColor = color;
+  } else {
+    bgLayerStyle = { backgroundColor: color };
+    resolvedTextColor = textColor;
+  }
 
   const sizeStyle: React.CSSProperties = {
     ...(width ? { width: `${width}px`, flex: "none" } : {}),
@@ -68,6 +89,18 @@ export default function ButtonWidget({
     fontStyle: italic ? "italic" : "normal",
   };
 
+  const glowOffset = -(cornerGlowSize * 0.4);
+  const glowStyle: React.CSSProperties = {
+    position: "absolute",
+    width: `${cornerGlowSize}px`,
+    height: `${cornerGlowSize}px`,
+    borderRadius: "9999px",
+    background: `radial-gradient(circle, ${cornerGlowColor}, transparent 70%)`,
+    opacity: cornerGlowOpacity / 100,
+    ...(cornerGlowPosition.startsWith("top") ? { top: glowOffset } : { bottom: glowOffset }),
+    ...(cornerGlowPosition.endsWith("left") ? { left: glowOffset } : { right: glowOffset }),
+  };
+
   return (
     <div className={`flex flex-col gap-2 ${fullWidth && !hasFixedSize ? "w-full" : "items-start"}`}>
       {fontUrl && <link rel="stylesheet" href={fontUrl} />}
@@ -76,12 +109,27 @@ export default function ButtonWidget({
         target={openInNewTab ? "_blank" : undefined}
         rel={openInNewTab ? "noopener noreferrer" : undefined}
         onClick={preview ? (e) => e.preventDefault() : undefined}
-        className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-center leading-snug shadow-sm transition-transform active:scale-[0.98] ${
+        className={`relative inline-flex items-center justify-center overflow-hidden px-5 py-3 text-center leading-snug shadow-sm transition-transform active:scale-[0.98] ${
           fullWidth && !hasFixedSize ? "w-full" : ""
         }`}
-        style={{ ...background, ...sizeStyle, ...typographyStyle }}
+        style={{ ...sizeStyle, ...borderStyle, color: resolvedTextColor }}
       >
-        {label}
+        <span aria-hidden className="pointer-events-none absolute inset-0" style={{ ...bgLayerStyle, opacity: backgroundOpacity / 100 }} />
+        {cornerGlow && <span aria-hidden className="pointer-events-none" style={glowStyle} />}
+        <span className="relative z-10 flex flex-col items-center gap-1.5">
+          <span style={typographyStyle}>{label}</span>
+          {accentLine && (
+            <span
+              aria-hidden
+              style={{
+                width: `${accentLineLength}px`,
+                height: `${accentLineWidth}px`,
+                backgroundColor: accentLineColor,
+                borderRadius: "999px",
+              }}
+            />
+          )}
+        </span>
       </a>
       {description && (
         <p className="text-xs text-neutral-500 dark:text-neutral-400">{description}</p>

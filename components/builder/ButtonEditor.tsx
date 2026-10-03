@@ -18,6 +18,13 @@ const WEIGHT_OPTIONS = [
   { value: 800, label: "Extrabold (800)" },
 ];
 
+const GLOW_POSITIONS: { value: ButtonConfig["cornerGlowPosition"]; label: string }[] = [
+  { value: "top-left", label: "Top left" },
+  { value: "top-right", label: "Top right" },
+  { value: "bottom-left", label: "Bottom left" },
+  { value: "bottom-right", label: "Bottom right" },
+];
+
 export default function ButtonEditor({
   config,
   onChange,
@@ -163,6 +170,142 @@ export default function ButtonEditor({
                   {p.label}
                 </button>
               ))}
+            </div>
+          </div>
+        )}
+
+        <div>
+          <label className={labelCls}>
+            Background opacity ({config.backgroundOpacity}%)
+          </label>
+          <input
+            type="range"
+            min={0}
+            max={100}
+            step={5}
+            className="w-full accent-blue-600"
+            value={config.backgroundOpacity}
+            onChange={(e) => set("backgroundOpacity", Number(e.target.value))}
+          />
+          <p className="mt-1 text-[11px] text-neutral-400">
+            Lower this to let the fill show through to whatever it&apos;s sitting on - the text stays fully solid.
+          </p>
+        </div>
+      </div>
+
+      {/* --- Corner accent --- */}
+      <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
+        <label className={checkboxRow}>
+          <input
+            type="checkbox"
+            checked={config.cornerGlow}
+            onChange={(e) => set("cornerGlow", e.target.checked)}
+          />
+          <span className={sectionTitle}>Corner glow</span>
+        </label>
+
+        {config.cornerGlow && (
+          <>
+            <div className={row}>
+              <div className="flex-1">
+                <label className={labelCls}>Position</label>
+                <select
+                  className={select}
+                  value={config.cornerGlowPosition}
+                  onChange={(e) =>
+                    set("cornerGlowPosition", e.target.value as ButtonConfig["cornerGlowPosition"])
+                  }
+                >
+                  {GLOW_POSITIONS.map((p) => (
+                    <option key={p.value} value={p.value}>
+                      {p.label}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className={labelCls}>Color</label>
+                <input
+                  type="color"
+                  className="h-9 w-14 cursor-pointer rounded-lg border border-neutral-200 dark:border-neutral-700"
+                  value={config.cornerGlowColor}
+                  onChange={(e) => set("cornerGlowColor", e.target.value)}
+                />
+              </div>
+            </div>
+            <div className={row}>
+              <div className="flex-1">
+                <label className={labelCls}>Size ({config.cornerGlowSize}px)</label>
+                <input
+                  type="range"
+                  min={20}
+                  max={400}
+                  step={10}
+                  className="w-full accent-blue-600"
+                  value={config.cornerGlowSize}
+                  onChange={(e) => set("cornerGlowSize", Number(e.target.value))}
+                />
+              </div>
+              <div className="flex-1">
+                <label className={labelCls}>Glow opacity ({config.cornerGlowOpacity}%)</label>
+                <input
+                  type="range"
+                  min={0}
+                  max={100}
+                  step={5}
+                  className="w-full accent-blue-600"
+                  value={config.cornerGlowOpacity}
+                  onChange={(e) => set("cornerGlowOpacity", Number(e.target.value))}
+                />
+              </div>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* --- Accent line --- */}
+      <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
+        <label className={checkboxRow}>
+          <input
+            type="checkbox"
+            checked={config.accentLine}
+            onChange={(e) => set("accentLine", e.target.checked)}
+          />
+          <span className={sectionTitle}>Accent line under text</span>
+        </label>
+
+        {config.accentLine && (
+          <div className={row}>
+            <div>
+              <label className={labelCls}>Color</label>
+              <input
+                type="color"
+                className="h-9 w-14 cursor-pointer rounded-lg border border-neutral-200 dark:border-neutral-700"
+                value={config.accentLineColor}
+                onChange={(e) => set("accentLineColor", e.target.value)}
+              />
+            </div>
+            <div className="flex-1">
+              <label className={labelCls}>Thickness (px)</label>
+              <input
+                type="number"
+                min={1}
+                max={12}
+                className={input}
+                value={config.accentLineWidth}
+                onChange={(e) => set("accentLineWidth", Number(e.target.value))}
+              />
+            </div>
+            <div className="flex-1">
+              <label className={labelCls}>Length (px)</label>
+              <input
+                type="number"
+                min={10}
+                max={200}
+                className={input}
+                value={config.accentLineLength}
+                onChange={(e) => set("accentLineLength", Number(e.target.value))}
+              />
             </div>
           </div>
         )}
