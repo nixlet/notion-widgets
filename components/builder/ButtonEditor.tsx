@@ -1,4 +1,5 @@
 import type { ButtonConfig } from "@/lib/types";
+import { FONT_OPTIONS } from "@/lib/fonts";
 import { field, input, label as labelCls, select, row, checkboxRow, smallBtn, sectionTitle } from "./formClasses";
 
 const ANGLE_PRESETS: { label: string; value: number }[] = [
@@ -7,6 +8,14 @@ const ANGLE_PRESETS: { label: string; value: number }[] = [
   { label: "→", value: 90 },
   { label: "↘", value: 135 },
   { label: "↓", value: 180 },
+];
+
+const WEIGHT_OPTIONS = [
+  { value: 400, label: "Regular (400)" },
+  { value: 500, label: "Medium (500)" },
+  { value: 600, label: "Semibold (600)" },
+  { value: 700, label: "Bold (700)" },
+  { value: 800, label: "Extrabold (800)" },
 ];
 
 export default function ButtonEditor({
@@ -221,6 +230,87 @@ export default function ButtonEditor({
           >
             Reset to auto size
           </button>
+        </div>
+      </div>
+
+      {/* --- Text style --- */}
+      <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
+        <p className={sectionTitle}>Text style</p>
+
+        <div className={row}>
+          <div className="flex-1">
+            <label className={labelCls}>Font</label>
+            <select
+              className={select}
+              value={config.fontFamily}
+              onChange={(e) => set("fontFamily", e.target.value)}
+            >
+              {FONT_OPTIONS.map((f) => (
+                <option key={f.id} value={f.id}>
+                  {f.label}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="flex-1">
+            <label className={labelCls}>Weight</label>
+            <select
+              className={select}
+              value={config.fontWeight}
+              onChange={(e) => set("fontWeight", Number(e.target.value))}
+            >
+              {WEIGHT_OPTIONS.map((w) => (
+                <option key={w.value} value={w.value}>
+                  {w.label}
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className={row}>
+          <div className="flex-1">
+            <label className={labelCls}>Size (px)</label>
+            <input
+              type="number"
+              min={10}
+              max={72}
+              className={input}
+              value={config.fontSize}
+              onChange={(e) => set("fontSize", Number(e.target.value))}
+            />
+          </div>
+          <div className="flex-1">
+            <label className={labelCls}>Letter spacing (px)</label>
+            <input
+              type="number"
+              step={0.5}
+              min={-2}
+              max={10}
+              className={input}
+              value={config.letterSpacing}
+              onChange={(e) => set("letterSpacing", Number(e.target.value))}
+            />
+          </div>
+        </div>
+
+        <div className="flex gap-4">
+          <label className={checkboxRow}>
+            <input
+              type="checkbox"
+              checked={config.uppercase}
+              onChange={(e) => set("uppercase", e.target.checked)}
+            />
+            Uppercase
+          </label>
+          <label className={checkboxRow}>
+            <input
+              type="checkbox"
+              checked={config.italic}
+              onChange={(e) => set("italic", e.target.checked)}
+            />
+            Italic
+          </label>
         </div>
       </div>
 

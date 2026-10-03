@@ -20,6 +20,13 @@ export const ButtonConfigSchema = z.object({
   width: z.number().int().min(40).max(800).optional(),
   height: z.number().int().min(32).max(800).optional(),
   borderRadius: z.number().int().min(0).max(999).default(12),
+  // Typography for the label.
+  fontFamily: z.string().default("system"),
+  fontSize: z.number().int().min(10).max(72).default(14),
+  fontWeight: z.number().int().min(100).max(900).default(500),
+  letterSpacing: z.number().min(-2).max(10).default(0),
+  uppercase: z.boolean().default(false),
+  italic: z.boolean().default(false),
 });
 export type ButtonConfig = z.infer<typeof ButtonConfigSchema>;
 

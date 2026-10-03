@@ -1,4 +1,5 @@
 import type { ButtonConfig } from "@/lib/types";
+import { getFont, googleFontsUrl } from "@/lib/fonts";
 
 function withAlpha(hex: string, alpha: string) {
   // Best-effort: if it's a hex color, append alpha; otherwise return as-is.
@@ -28,9 +29,17 @@ export default function ButtonWidget({
     width,
     height,
     borderRadius,
+    fontFamily,
+    fontSize,
+    fontWeight,
+    letterSpacing,
+    uppercase,
+    italic,
   } = config;
 
   const hasFixedSize = Boolean(width || height);
+  const font = getFont(fontFamily);
+  const fontUrl = googleFontsUrl(font);
 
   const background: React.CSSProperties =
     backgroundType === "gradient"
@@ -50,17 +59,27 @@ export default function ButtonWidget({
     borderRadius: `${borderRadius}px`,
   };
 
+  const typographyStyle: React.CSSProperties = {
+    fontFamily: font.cssFamily,
+    fontSize: `${fontSize}px`,
+    fontWeight,
+    letterSpacing: `${letterSpacing}px`,
+    textTransform: uppercase ? "uppercase" : "none",
+    fontStyle: italic ? "italic" : "normal",
+  };
+
   return (
     <div className={`flex flex-col gap-2 ${fullWidth && !hasFixedSize ? "w-full" : "items-start"}`}>
+      {fontUrl && <link rel="stylesheet" href={fontUrl} />}
       <a
         href={url}
         target={openInNewTab ? "_blank" : undefined}
         rel={openInNewTab ? "noopener noreferrer" : undefined}
         onClick={preview ? (e) => e.preventDefault() : undefined}
-        className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-center text-sm font-medium leading-snug shadow-sm transition-transform active:scale-[0.98] ${
+        className={`inline-flex items-center justify-center gap-2 px-5 py-3 text-center leading-snug shadow-sm transition-transform active:scale-[0.98] ${
           fullWidth && !hasFixedSize ? "w-full" : ""
         }`}
-        style={{ ...background, ...sizeStyle }}
+        style={{ ...background, ...sizeStyle, ...typographyStyle }}
       >
         {label}
       </a>

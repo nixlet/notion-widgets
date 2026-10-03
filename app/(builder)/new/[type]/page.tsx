@@ -18,6 +18,12 @@ function defaultConfigFor(type: string): WidgetConfig {
         gradientAngle: 135,
         textColor: "#ffffff",
         borderRadius: 12,
+        fontFamily: "system",
+        fontSize: 14,
+        fontWeight: 500,
+        letterSpacing: 0,
+        uppercase: false,
+        italic: false,
       };
     case "form":
       return {
