@@ -25,6 +25,7 @@ function timeAgo(iso: string) {
 export default function Dashboard() {
   const [widgets, setWidgets] = useState<WidgetSummary[] | null>(null);
   const [origin, setOrigin] = useState("");
+  const [query, setQuery] = useState("");
 
   async function load() {
     const res = await fetch("/api/widgets");
@@ -74,9 +75,28 @@ export default function Dashboard() {
     );
   }
 
+  const trimmedQuery = query.trim().toLowerCase();
+  const filtered = trimmedQuery
+    ? widgets.filter((w) => w.name.toLowerCase().includes(trimmedQuery))
+    : widgets;
+
   return (
-    <div className="flex flex-col gap-3">
-      {widgets.map((w) => (
+    <div className="flex flex-col gap-4">
+      <input
+        type="search"
+        value={query}
+        onChange={(e) => setQuery(e.target.value)}
+        placeholder={`Search ${widgets.length} widget${widgets.length === 1 ? "" : "s"} by name...`}
+        className="w-full rounded-lg border border-neutral-200 bg-white px-3.5 py-2 text-sm text-neutral-900 placeholder:text-neutral-400 focus:border-blue-500 focus:outline-none dark:border-neutral-700 dark:bg-neutral-900 dark:text-white"
+      />
+
+      {filtered.length === 0 && (
+        <p className="py-6 text-center text-sm text-neutral-500 dark:text-neutral-400">
+          No widgets match &quot;{query.trim()}&quot;.
+        </p>
+      )}
+
+      {filtered.map((w) => (
         <div
           key={w.id}
           className="flex items-center justify-between gap-4 rounded-xl border border-neutral-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900"
