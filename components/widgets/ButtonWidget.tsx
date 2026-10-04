@@ -1,10 +1,29 @@
-import type { ButtonConfig } from "@/lib/types";
+import type { BorderSide, ButtonConfig } from "@/lib/types";
 import { getFont, googleFontsUrl } from "@/lib/fonts";
 
 function withAlpha(hex: string, alpha: string) {
   // Best-effort: if it's a hex color, append alpha; otherwise return as-is.
   if (/^#([0-9a-f]{6})$/i.test(hex)) return `${hex}${alpha}`;
   return hex;
+}
+
+// One absolutely-positioned bar per enabled edge, each its own flat color or
+// 2-stop gradient running along that edge. Relies on the button's own
+// `overflow: hidden` + border-radius to get clipped into the right shape.
+function borderBarStyle(
+  side: BorderSide,
+  edge: "top" | "bottom" | "left" | "right"
+): React.CSSProperties | null {
+  if (!side.enabled) return null;
+  const horizontal = edge === "top" || edge === "bottom";
+  const background = side.gradient
+    ? `linear-gradient(${horizontal ? "90deg" : "180deg"}, ${side.color}, ${side.gradientColor})`
+    : side.color;
+  const base: React.CSSProperties = { position: "absolute", background };
+  if (edge === "top") return { ...base, top: 0, left: 0, right: 0, height: side.thickness };
+  if (edge === "bottom") return { ...base, bottom: 0, left: 0, right: 0, height: side.thickness };
+  if (edge === "left") return { ...base, top: 0, bottom: 0, left: 0, width: side.thickness };
+  return { ...base, top: 0, bottom: 0, right: 0, width: side.thickness };
 }
 
 export default function ButtonWidget({
@@ -27,6 +46,7 @@ export default function ButtonWidget({
     description,
     backgroundType,
     gradientColor,
+    gradientColor3,
     gradientAngle,
     backgroundOpacity,
     textColor,
@@ -39,6 +59,11 @@ export default function ButtonWidget({
     accentLineColor,
     accentLineWidth,
     accentLineLength,
+    contentGap,
+    borderTop,
+    borderBottom,
+    borderLeft,
+    borderRight,
     width,
     height,
     borderRadius,
@@ -61,8 +86,11 @@ export default function ButtonWidget({
   let resolvedTextColor: string;
 
   if (backgroundType === "gradient") {
+    const stops = gradientColor3
+      ? `${color}, ${gradientColor}, ${gradientColor3}`
+      : `${color}, ${gradientColor}`;
     bgLayerStyle = {
-      backgroundImage: `linear-gradient(${gradientAngle}deg, ${color}, ${gradientColor})`,
+      backgroundImage: `linear-gradient(${gradientAngle}deg, ${stops})`,
     };
     resolvedTextColor = textColor;
   } else if (style === "outline") {
@@ -119,7 +147,19 @@ export default function ButtonWidget({
       >
         <span aria-hidden className="pointer-events-none absolute inset-0" style={{ ...bgLayerStyle, opacity: backgroundOpacity / 100 }} />
         {cornerGlow && <span aria-hidden className="pointer-events-none" style={glowStyle} />}
-        <span className="relative z-10 flex flex-col items-center gap-1.5">
+        {borderTop.enabled && (
+          <span aria-hidden className="pointer-events-none" style={borderBarStyle(borderTop, "top")!} />
+        )}
+        {borderBottom.enabled && (
+          <span aria-hidden className="pointer-events-none" style={borderBarStyle(borderBottom, "bottom")!} />
+        )}
+        {borderLeft.enabled && (
+          <span aria-hidden className="pointer-events-none" style={borderBarStyle(borderLeft, "left")!} />
+        )}
+        {borderRight.enabled && (
+          <span aria-hidden className="pointer-events-none" style={borderBarStyle(borderRight, "right")!} />
+        )}
+        <span className="relative z-10 flex flex-col items-center" style={{ gap: `${contentGap}px` }}>
           <span style={typographyStyle}>{label}</span>
           {accentLine && (
             <span
