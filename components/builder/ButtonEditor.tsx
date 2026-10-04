@@ -1,6 +1,78 @@
-import type { ButtonConfig } from "@/lib/types";
+import type { BorderSide, ButtonConfig } from "@/lib/types";
 import { FONT_OPTIONS } from "@/lib/fonts";
 import { field, input, label as labelCls, select, row, checkboxRow, smallBtn, sectionTitle } from "./formClasses";
+
+const BORDER_EDGES: { key: "borderTop" | "borderBottom" | "borderLeft" | "borderRight"; label: string }[] = [
+  { key: "borderTop", label: "Top" },
+  { key: "borderBottom", label: "Bottom" },
+  { key: "borderLeft", label: "Left" },
+  { key: "borderRight", label: "Right" },
+];
+
+function BorderSideEditor({
+  label,
+  side,
+  onChange,
+}: {
+  label: string;
+  side: BorderSide;
+  onChange: (next: BorderSide) => void;
+}) {
+  const set = <K extends keyof BorderSide>(key: K, value: BorderSide[K]) =>
+    onChange({ ...side, [key]: value });
+
+  return (
+    <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-2.5 dark:border-neutral-700">
+      <label className={checkboxRow}>
+        <input type="checkbox" checked={side.enabled} onChange={(e) => set("enabled", e.target.checked)} />
+        <span className="text-xs font-medium">{label}</span>
+      </label>
+      {side.enabled && (
+        <div className={row}>
+          <div>
+            <label className={labelCls}>Color</label>
+            <input
+              type="color"
+              className="h-9 w-14 cursor-pointer rounded-lg border border-neutral-200 dark:border-neutral-700"
+              value={side.color}
+              onChange={(e) => set("color", e.target.value)}
+            />
+          </div>
+          <label className={checkboxRow}>
+            <input
+              type="checkbox"
+              checked={side.gradient}
+              onChange={(e) => set("gradient", e.target.checked)}
+            />
+            Gradient
+          </label>
+          {side.gradient && (
+            <div>
+              <label className={labelCls}>To</label>
+              <input
+                type="color"
+                className="h-9 w-14 cursor-pointer rounded-lg border border-neutral-200 dark:border-neutral-700"
+                value={side.gradientColor}
+                onChange={(e) => set("gradientColor", e.target.value)}
+              />
+            </div>
+          )}
+          <div className="flex-1">
+            <label className={labelCls}>Thickness (px)</label>
+            <input
+              type="number"
+              min={1}
+              max={20}
+              className={input}
+              value={side.thickness}
+              onChange={(e) => set("thickness", Number(e.target.value))}
+            />
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
 
 const ANGLE_PRESETS: { label: string; value: number }[] = [
   { label: "↑", value: 0 },
@@ -165,7 +237,7 @@ export default function ButtonEditor({
                 />
               </div>
               <div>
-                <label className={labelCls}>End</label>
+                <label className={labelCls}>{config.gradientColor3 ? "Middle" : "End"}</label>
                 <input
                   type="color"
                   className="h-9 w-14 cursor-pointer rounded-lg border border-neutral-200 dark:border-neutral-700"
@@ -173,6 +245,17 @@ export default function ButtonEditor({
                   onChange={(e) => set("gradientColor", e.target.value)}
                 />
               </div>
+              {config.gradientColor3 && (
+                <div>
+                  <label className={labelCls}>End</label>
+                  <input
+                    type="color"
+                    className="h-9 w-14 cursor-pointer rounded-lg border border-neutral-200 dark:border-neutral-700"
+                    value={config.gradientColor3}
+                    onChange={(e) => set("gradientColor3", e.target.value)}
+                  />
+                </div>
+              )}
               <div>
                 <label className={labelCls}>Text</label>
                 <input
@@ -194,17 +277,27 @@ export default function ButtonEditor({
                 />
               </div>
             </div>
-            <div className="flex gap-1.5">
-              {ANGLE_PRESETS.map((p) => (
-                <button
-                  key={p.value}
-                  type="button"
-                  className={smallBtn}
-                  onClick={() => set("gradientAngle", p.value)}
-                >
-                  {p.label}
-                </button>
-              ))}
+            <div className="flex items-center gap-3">
+              <div className="flex gap-1.5">
+                {ANGLE_PRESETS.map((p) => (
+                  <button
+                    key={p.value}
+                    type="button"
+                    className={smallBtn}
+                    onClick={() => set("gradientAngle", p.value)}
+                  >
+                    {p.label}
+                  </button>
+                ))}
+              </div>
+              <label className={checkboxRow}>
+                <input
+                  type="checkbox"
+                  checked={Boolean(config.gradientColor3)}
+                  onChange={(e) => set("gradientColor3", e.target.checked ? "#0ea5e9" : undefined)}
+                />
+                3-color gradient
+              </label>
             </div>
           </div>
         )}
@@ -344,6 +437,36 @@ export default function ButtonEditor({
             </div>
           </div>
         )}
+      </div>
+
+      {/* --- Element spacing --- */}
+      <div className="flex flex-col gap-2 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
+        <p className={sectionTitle}>Spacing between elements</p>
+        <label className={labelCls}>Gap ({config.contentGap}px)</label>
+        <input
+          type="range"
+          min={0}
+          max={40}
+          className="w-full accent-blue-600"
+          value={config.contentGap}
+          onChange={(e) => set("contentGap", Number(e.target.value))}
+        />
+        <p className="text-[11px] text-neutral-400">
+          Controls the space between the label, the accent line, and the subtext.
+        </p>
+      </div>
+
+      {/* --- Borders --- */}
+      <div className="flex flex-col gap-3 rounded-lg border border-neutral-200 p-3 dark:border-neutral-700">
+        <p className={sectionTitle}>Borders</p>
+        {BORDER_EDGES.map((edge) => (
+          <BorderSideEditor
+            key={edge.key}
+            label={edge.label}
+            side={config[edge.key]}
+            onChange={(next) => set(edge.key, next)}
+          />
+        ))}
       </div>
 
       {/* --- Size & shape --- */}
