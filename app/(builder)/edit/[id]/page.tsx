@@ -19,7 +19,14 @@ export default async function EditWidgetPage({
       <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
         Edit &quot;{widget.name}&quot;
       </h1>
-      <WidgetEditor type={widget.type} existing={widget} defaultConfig={config} />
+      {/*
+        key={widget.id} forces React to fully remount the editor when you
+        navigate from editing one widget straight to editing another
+        (client-side navigation otherwise reuses the same component
+        instance, so its in-memory state - like a color you just changed -
+        would stick around and silently get saved onto the next widget).
+      */}
+      <WidgetEditor key={widget.id} type={widget.type} existing={widget} defaultConfig={config} />
     </div>
   );
 }
