@@ -34,9 +34,7 @@ export default function WidgetEditor({
   const router = useRouter();
   const [name, setName] = useState(existing?.name ?? `Untitled ${TYPE_LABELS[type]}`);
   const [transparent, setTransparent] = useState(existing?.transparent ?? true);
-  const [config, setConfig] = useState<WidgetConfig>(
-    (existing?.config as WidgetConfig) ?? defaultConfig
-  );
+  const [config, setConfig] = useState<WidgetConfig>(defaultConfig);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [savedWidget, setSavedWidget] = useState<Widget | null>(existing ?? null);
