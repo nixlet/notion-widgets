@@ -1,3 +1,7 @@
 node_modules
 .next
 .data
+.claude
+tsconfig.tsbuildinfo
+/AGENTS.md
+/CLAUDE.md
