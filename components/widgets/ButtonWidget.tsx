@@ -121,6 +121,17 @@ export default function ButtonWidget({
         {cornerGlow && <span aria-hidden className="pointer-events-none" style={glowStyle} />}
         <span className="relative z-10 flex flex-col items-center gap-1.5">
           <span style={typographyStyle}>{label}</span>
+          {accentLine && (
+            <span
+              aria-hidden
+              style={{
+                width: `${accentLineLength}px`,
+                height: `${accentLineWidth}px`,
+                backgroundColor: accentLineColor,
+                borderRadius: "999px",
+              }}
+            />
+          )}
           {subLabel && (
             <span
               style={{
@@ -132,17 +143,6 @@ export default function ButtonWidget({
             >
               {subLabel}
             </span>
-          )}
-          {accentLine && (
-            <span
-              aria-hidden
-              style={{
-                width: `${accentLineLength}px`,
-                height: `${accentLineWidth}px`,
-                backgroundColor: accentLineColor,
-                borderRadius: "999px",
-              }}
-            />
           )}
         </span>
       </a>
