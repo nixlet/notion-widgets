@@ -1,5 +1,16 @@
 import { z } from "zod";
 
+// One edge of a button's custom border: a flat color, or a 2-stop gradient
+// running along that edge.
+export const BorderSideSchema = z.object({
+  enabled: z.boolean().default(false),
+  color: z.string().default("#e2e8f0"),
+  gradient: z.boolean().default(false),
+  gradientColor: z.string().default("#22d3ee"),
+  thickness: z.number().int().min(1).max(20).default(2),
+});
+export type BorderSide = z.infer<typeof BorderSideSchema>;
+
 // ---------- Button ----------
 export const ButtonConfigSchema = z.object({
   label: z.string().min(1).max(60),
@@ -16,6 +27,10 @@ export const ButtonConfigSchema = z.object({
   // Background: a flat color (uses `style`/`color` above) or a gradient.
   backgroundType: z.enum(["solid", "gradient"]).default("solid"),
   gradientColor: z.string().default("#7c3aed"),
+  // Optional third gradient stop - when set, the background becomes a
+  // 3-color gradient (color -> gradientColor -> gradientColor3) instead of
+  // the regular 2-color one.
+  gradientColor3: z.string().optional(),
   gradientAngle: z.number().min(0).max(360).default(135),
   // 0-100. Lets the background show through to whatever it's embedded on
   // (Notion page, dark/light mode, etc) without fading the text.
@@ -35,6 +50,13 @@ export const ButtonConfigSchema = z.object({
   accentLineColor: z.string().default("#22d3ee"),
   accentLineWidth: z.number().int().min(1).max(12).default(3),
   accentLineLength: z.number().int().min(10).max(200).default(40),
+  // Vertical gap between the stacked label / accent line / subtext.
+  contentGap: z.number().int().min(0).max(40).default(6),
+  // Custom per-edge borders, each a flat color or its own 2-stop gradient.
+  borderTop: BorderSideSchema.default({}),
+  borderBottom: BorderSideSchema.default({}),
+  borderLeft: BorderSideSchema.default({}),
+  borderRight: BorderSideSchema.default({}),
   // Explicit size, for a fixed tile/square button. Leave unset for a
   // button that just hugs its label (or stretches via fullWidth).
   width: z.number().int().min(40).max(800).optional(),
