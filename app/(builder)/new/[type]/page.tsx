@@ -72,7 +72,9 @@ export default async function NewWidgetTypePage({
       <h1 className="text-lg font-semibold text-neutral-900 dark:text-white">
         New {parsed.data} widget
       </h1>
-      <WidgetEditor type={parsed.data} defaultConfig={defaultConfigFor(parsed.data)} />
+      {/* key={parsed.data} forces a remount when navigating from one "New
+          widget" type straight to another, same reasoning as the edit page. */}
+      <WidgetEditor key={parsed.data} type={parsed.data} defaultConfig={defaultConfigFor(parsed.data)} />
     </div>
   );
 }
